@@ -5,14 +5,17 @@ INCLUDEPATH += ../../location/maps
 INCLUDEPATH += ../../positioning
 INCLUDEPATH *= $$PWD
 
-LIBS += -L../../3rdparty/poly2tri -lpoly2tri
-
 win32 {
     CONFIG(debug, debug|release) {
-        LIBS += -L../../3rdparty/poly2tri/debug
+        PRE_TARGETDEPS += $$OUT_PWD/../../3rdparty/poly2tri/debug/libpoly2tri.a
+        LIBS += -L../../3rdparty/poly2tri/debug -lpoly2tri
     } else {
-        LIBS += -L../../3rdparty/poly2tri/release
+        PRE_TARGETDEPS += $$OUT_PWD/../../3rdparty/poly2tri/release/libpoly2tri.a
+        LIBS += -L../../3rdparty/poly2tri/release -lpoly2tri
     }
+} else {
+    PRE_TARGETDEPS += $$OUT_PWD/../../3rdparty/poly2tri/libpoly2tri.a
+    LIBS += -L../../3rdparty/poly2tri -lpoly2tri
 }
 
 HEADERS += \
