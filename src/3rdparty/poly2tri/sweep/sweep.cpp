@@ -64,12 +64,14 @@ void Sweep::FinalizationPolygon(SweepContext& tcx)
   // Get an Internal triangle to start with
   Triangle* t = tcx.front()->head()->next->triangle;
   Point* p = tcx.front()->head()->next->point;
-  while (!t->GetConstrainedEdgeCW(*p)) {
+  while (p && t && !t->GetConstrainedEdgeCW(*p)) {
     t = t->NeighborCCW(*p);
   }
 
   // Collect interior triangles constrained by edges
-  tcx.MeshClean(*t);
+  if (t) {
+    tcx.MeshClean(*t);
+  }
 }
 
 Node& Sweep::PointEvent(SweepContext& tcx, Point& point)
