@@ -162,7 +162,11 @@ find %{buildroot}%{_libdir} -type f -name '*.prl' \
 %post -n qt5-qtpositioning -p /sbin/ldconfig
 %postun -n qt5-qtpositioning -p /sbin/ldconfig
 
-%post -n qt5-qtlocation -p /sbin/ldconfig
+%post -n qt5-qtlocation
+/sbin/ldconfig
+# this directory contains a bunch of cached images, potentially with the wrong tile size.
+/bin/rm -rf /home/nemo/.cache/org.sailfishos/sailfish-maps || :
+
 %postun -n qt5-qtlocation -p /sbin/ldconfig
 
 
