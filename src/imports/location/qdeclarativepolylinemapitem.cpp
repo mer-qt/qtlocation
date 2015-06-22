@@ -127,6 +127,93 @@ QT_BEGIN_NAMESPACE
     \image api-mappolyline.png
 */
 
+namespace
+{
+
+// square distance between 2 points
+double getSqDist(const QDoubleVector2D &p1, const QDoubleVector2D &p2)
+{
+    return (p1 - p2).lengthSquared();
+}
+
+double getSqSegDist(const QDoubleVector2D &p, const QDoubleVector2D &p1, const QDoubleVector2D &p2)
+{
+    QDoubleVector2D g = p1;
+    QDoubleVector2D d = p2 - g;
+
+    if (!d.isNull()) {
+        double t = ((p.x() - g.x()) * d.x() + (p.y() - g.y()) * d.y()) / d.lengthSquared();
+
+        if (t > 1)
+            g = p2;
+        else if (t > 0)
+            g += d * t;
+    }
+
+    d = p - g;
+
+    return d.lengthSquared();
+}
+
+void simplifyDPStep(const QVector<QDoubleVector2D> &path, int startIndex, int endIndex,
+                    QVector<qreal> &sPath, QVector<QPainterPath::ElementType> &sTypes,
+                    double tolerance)
+{
+    double maxSqDist = tolerance;
+    int index = startIndex + 1;
+
+    const QDoubleVector2D &firstPoint = path.at(startIndex);
+    const QDoubleVector2D &lastPoint = path.at(endIndex);
+
+    for (int i = startIndex + 1; i < endIndex; ++i) {
+        const QDoubleVector2D &point = path.at(i);
+        double sqDist = getSqSegDist(point, firstPoint, lastPoint);
+        if (sqDist > maxSqDist) {
+            index = i;
+            maxSqDist = sqDist;
+        }
+    }
+
+    if (maxSqDist > tolerance) {
+        if (index - startIndex > 1)
+            simplifyDPStep(path, startIndex, index, sPath, sTypes, tolerance);
+
+        const QDoubleVector2D &point = path.at(index);
+        sPath << point.x() << point.y();
+        sTypes << QPainterPath::LineToElement;
+
+        if (endIndex - index > 1)
+            simplifyDPStep(path, index, endIndex, sPath, sTypes, tolerance);
+    }
+}
+
+// simplification using Ramer-Douglas-Peucker algorithm
+void simplifyDouglasPeucker(const QVector<QDoubleVector2D> &path, QVector<qreal> &sPath,
+                            QVector<QPainterPath::ElementType> &sTypes, double tolerance)
+{
+    const QDoubleVector2D &firstPoint = path.first();
+    const QDoubleVector2D &lastPoint = path.last();
+
+    sPath << firstPoint.x() << firstPoint.y();
+    sTypes << QPainterPath::MoveToElement;
+
+    simplifyDPStep(path, 0, path.length()-1, sPath, sTypes, tolerance);
+
+    sPath << lastPoint.x() << lastPoint.y();
+    sTypes << QPainterPath::LineToElement;
+}
+
+void simplifyPath(const QVector<QDoubleVector2D> &path, QVector<qreal> &sPath,
+                  QVector<QPainterPath::ElementType> &sTypes, double tolerance = 1.0)
+{
+    if (path.length() < 2)
+        return;
+
+    simplifyDouglasPeucker(path, sPath, sTypes, tolerance*tolerance);
+}
+
+}
+
 QDeclarativeMapLineProperties::QDeclarativeMapLineProperties(QObject *parent) :
     QObject(parent),
     width_(1.0),
@@ -205,11 +292,14 @@ void QGeoMapPolylineGeometry::updateSourcePoints(const QGeoMap &map,
     srcPointTypes_.clear();
     srcPointTypes_.reserve(path.size());
 
-    QDoubleVector2D origin, lastPoint, lastAddedPoint;
+    QDoubleVector2D origin;
+    QDoubleVector2D lastAddedPoint;
 
     double unwrapBelowX = 0;
     if (preserveGeometry_)
         unwrapBelowX = map.coordinateToScreenPosition(geoLeftBound_, false).x();
+
+    QVector<QDoubleVector2D> radiallySimplified;
 
     for (int i = 0; i < path.size(); ++i) {
         const QGeoCoordinate &coord = path.at(i);
@@ -241,8 +331,7 @@ void QGeoMapPolylineGeometry::updateSourcePoints(const QGeoMap &map,
             minY = point.y();
             maxY = minY;
 
-            srcPoints_ << point.x() << point.y();
-            srcPointTypes_ << QPainterPath::MoveToElement;
+            radiallySimplified << point;
             lastAddedPoint = point;
         } else {
             point -= origin;
@@ -252,16 +341,14 @@ void QGeoMapPolylineGeometry::updateSourcePoints(const QGeoMap &map,
             maxX = qMax(point.x(), maxX);
             maxY = qMax(point.y(), maxY);
 
-            if ((point - lastAddedPoint).manhattanLength() > 3 ||
-                    i == path.size() - 1) {
-                srcPoints_ << point.x() << point.y();
-                srcPointTypes_ << QPainterPath::LineToElement;
+            if ((point - lastAddedPoint).manhattanLength() > 3 || i == path.size() - 1) {
+                radiallySimplified << point;
                 lastAddedPoint = point;
             }
         }
-
-        lastPoint = point;
     }
+
+    simplifyPath(radiallySimplified, srcPoints_, srcPointTypes_);
 
     sourceBounds_ = QRectF(QPointF(minX, minY), QPointF(maxX, maxY));
     geoLeftBound_ = map.screenPositionToCoordinate(
@@ -646,7 +733,14 @@ void QDeclarativePolylineMapItem::afterViewportChanged(const QGeoMapViewportChan
 */
 void QDeclarativePolylineMapItem::updatePolish()
 {
-    if (!map() || path_.count() == 0)
+    if (!map() || path_.isEmpty())
+        return;
+
+    QGeoRectangle bb(path_.at(0), path_.at(0));
+    for (int i = 0; i < path_.count(); ++i)
+        bb.extendShape(path_.at(i));
+    setVisibleOnMap(bb.intersects(map()->visibleRegion()));
+    if (!visibleOnMap())
         return;
 
     geometry_.updateSourcePoints(*map(), path_);

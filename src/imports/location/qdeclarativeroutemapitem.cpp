@@ -203,28 +203,11 @@ void QDeclarativeRouteMapItem::updatePolish()
     if (!map() || path_.isEmpty())
         return;
 
-    QGeoRectangle r = map()->visibleRegion();
-
-    bool cull = true;
-    foreach (const QGeoCoordinate &c, path_) {
-        if (r.contains(c)) {
-            cull = false;
-            break;
-        }
-    }
-
-    if (cull) {
-        if (visibleOnMap()) {
-            setVisibleOnMap(false);
-            update();
-        }
-        return;
-    } else {
-        setVisibleOnMap(true);
-    }
-
     geometry_.updateSourcePoints(*map(), path_);
     geometry_.updateScreenPoints(*map(), line_.width());
+
+    // TODO: if not visible on map return
+
     setWidth(geometry_.sourceBoundingBox().width());
     setHeight(geometry_.sourceBoundingBox().height());
 
