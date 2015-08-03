@@ -212,7 +212,11 @@ float QDeclarativeGeoMapItemBase::zoomLevelOpacity() const
 
 void QDeclarativeGeoMapItemBase::setVisibleOnMap(bool visible)
 {
+    if (visibleOnMap_ == visible)
+        return;
+
     visibleOnMap_ = visible;
+    update();
 }
 
 bool QDeclarativeGeoMapItemBase::visibleOnMap() const

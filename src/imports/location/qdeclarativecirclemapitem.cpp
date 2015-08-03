@@ -44,9 +44,12 @@
 #include "qdeclarativepolygonmapitem_p.h"
 #include "qgeocameracapabilities_p.h"
 #include "qgeoprojection_p.h"
-#include <cmath>
+
+#include <QtCore/QtMath>
 #include <QPen>
 #include <QPainter>
+#include <QtPositioning/QGeoCircle>
+#include <QtPositioning/QGeoRectangle>
 
 #include "qdoublevector2d_p.h"
 
@@ -464,6 +467,13 @@ QSGNode *QDeclarativeCircleMapItem::updateMapItemPaintNode(QSGNode *oldNode, Upd
 void QDeclarativeCircleMapItem::updatePolish()
 {
     if (!map() || !center().isValid())
+        return;
+
+    QGeoCoordinate topLeft = center_.atDistanceAndAzimuth(M_SQRT2*radius_, -45);
+    QGeoCoordinate bottomRight = center_.atDistanceAndAzimuth(M_SQRT2*radius_, 135);
+    QGeoRectangle bb = QGeoRectangle(topLeft, bottomRight);
+    setVisibleOnMap(bb.intersects(map()->visibleRegion()));
+    if (!visibleOnMap())
         return;
 
     if (geometry_.isSourceDirty()) {

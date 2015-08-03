@@ -539,7 +539,14 @@ QSGNode *QDeclarativePolygonMapItem::updateMapItemPaintNode(QSGNode *oldNode, Up
 */
 void QDeclarativePolygonMapItem::updatePolish()
 {
-    if (!map() || path_.count() == 0)
+    if (!map() || path_.isEmpty())
+        return;
+
+    QGeoRectangle bb(path_.at(0), path_.at(0));
+    for (int i = 1; i < path_.count(); ++i)
+        bb.extendShape(path_.at(i));
+    setVisibleOnMap(bb.intersects(map()->visibleRegion()));
+    if (!visibleOnMap())
         return;
 
     geometry_.updateSourcePoints(*map(), path_);
