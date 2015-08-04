@@ -96,6 +96,9 @@ public:
     void setActiveMapType(const QGeoMapType mapType);
     const QGeoMapType activeMapType() const;
 
+    virtual QDoubleVector2D coordinateToStaticProjection(const QGeoCoordinate &coordinate) const = 0;
+    virtual QDoubleVector2D staticProjectionToScreenPosition(const QDoubleVector2D &position) const = 0;
+
     virtual QGeoCoordinate screenPositionToCoordinate(const QDoubleVector2D &pos, bool clipToViewport = true) const = 0;
     virtual QDoubleVector2D coordinateToScreenPosition(const QGeoCoordinate &coordinate, bool clipToViewport = true) const = 0;
 

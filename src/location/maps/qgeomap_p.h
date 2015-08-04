@@ -102,6 +102,9 @@ public:
     QGeoCoordinate screenPositionToCoordinate(const QDoubleVector2D &pos, bool clipToViewport = true) const;
     QDoubleVector2D coordinateToScreenPosition(const QGeoCoordinate &coordinate, bool clipToViewport = true) const;
 
+    QDoubleVector2D coordinateToStaticProjection(const QGeoCoordinate &coordinate) const;
+    QDoubleVector2D staticProjectionToScreenPosition(const QDoubleVector2D &position) const;
+
     void setActiveMapType(const QGeoMapType mapType);
     const QGeoMapType activeMapType() const;
 

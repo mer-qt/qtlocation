@@ -147,6 +147,17 @@ void QGeoTiledMapData::evaluateCopyrights(const QSet<QGeoTileSpec> &visibleTiles
     Q_UNUSED(visibleTiles);
 }
 
+QDoubleVector2D QGeoTiledMapData::coordinateToStaticProjection(const QGeoCoordinate &coordinate) const
+{
+    return QGeoProjection::coordToMercator(coordinate);
+}
+
+QDoubleVector2D QGeoTiledMapData::staticProjectionToScreenPosition(const QDoubleVector2D &position) const
+{
+    Q_D(const QGeoTiledMapData);
+    return d->staticProjectionToScreenPosition(position);
+}
+
 QGeoCoordinate QGeoTiledMapData::screenPositionToCoordinate(const QDoubleVector2D &pos, bool clipToViewport) const
 {
     Q_D(const QGeoTiledMapData);
@@ -333,6 +344,11 @@ QSet<QGeoTileSpec> QGeoTiledMapDataPrivate::visibleTiles()
 QSGNode *QGeoTiledMapDataPrivate::updateSceneGraph(QSGNode *oldNode, QQuickWindow *window)
 {
     return mapScene_->updateSceneGraph(oldNode, window);
+}
+
+QDoubleVector2D QGeoTiledMapDataPrivate::staticProjectionToScreenPosition(const QDoubleVector2D &position) const
+{
+    return mapScene_->mercatorToScreenPosition(position);
 }
 
 QGeoCoordinate QGeoTiledMapDataPrivate::screenPositionToCoordinate(const QDoubleVector2D &pos) const
