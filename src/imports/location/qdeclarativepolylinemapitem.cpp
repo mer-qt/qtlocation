@@ -275,7 +275,8 @@ QGeoMapPolylineGeometry::QGeoMapPolylineGeometry(QObject *parent) :
     \internal
 */
 void QGeoMapPolylineGeometry::updateSourcePoints(const QGeoMap &map,
-                                                 const QList<QGeoCoordinate> &path)
+                                                 const QList<QGeoCoordinate> &path,
+                                                 const QVector<QDoubleVector2D> &staticProjectionPath)
 {
     bool foundValid = false;
     double minX = -1.0;
@@ -304,10 +305,11 @@ void QGeoMapPolylineGeometry::updateSourcePoints(const QGeoMap &map,
     for (int i = 0; i < path.size(); ++i) {
         const QGeoCoordinate &coord = path.at(i);
 
-        if (!coord.isValid())
-            continue;
-
-        QDoubleVector2D point = map.coordinateToScreenPosition(coord, false);
+        QDoubleVector2D point;
+        if (staticProjectionPath.isEmpty())
+            point = map.coordinateToScreenPosition(coord, false);
+        else
+            point = map.staticProjectionToScreenPosition(staticProjectionPath.at(i));
 
         // We can get NaN if the map isn't set up correctly, or the projection
         // is faulty -- probably best thing to do is abort

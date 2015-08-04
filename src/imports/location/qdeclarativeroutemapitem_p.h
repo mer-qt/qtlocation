@@ -86,7 +86,8 @@ protected Q_SLOTS:
 private:
     QDeclarativeMapLineProperties line_;
     QDeclarativeGeoRoute *route_;
-    QList<QGeoCoordinate> path_;
+    QList<QGeoCoordinate> m_path;
+    QVector<QDoubleVector2D> m_staticProjectionPath;
     bool dirtyMaterial_;
     bool dragActive_;
     QGeoMapPolylineGeometry geometry_;

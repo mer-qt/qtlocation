@@ -86,8 +86,8 @@ class QGeoMapPolylineGeometry : public QGeoMapItemGeometry
 public:
     explicit QGeoMapPolylineGeometry(QObject *parent = 0);
 
-    void updateSourcePoints(const QGeoMap &map,
-                            const QList<QGeoCoordinate> &path);
+    void updateSourcePoints(const QGeoMap &map, const QList<QGeoCoordinate> &path,
+                            const QVector<QDoubleVector2D> &staticProjectionPath = QVector<QDoubleVector2D>());
 
     void updateScreenPoints(const QGeoMap &map,
                             qreal strokeWidth);
