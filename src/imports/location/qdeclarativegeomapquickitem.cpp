@@ -193,6 +193,9 @@ void QDeclarativeGeoMapQuickItem::setCoordinate(const QGeoCoordinate &coordinate
 
     coordinate_ = coordinate;
 
+    if (map())
+        staticProjectionCoordinate_ = map()->coordinateToStaticProjection(coordinate);
+
     polish();
 
     emit coordinateChanged();
@@ -205,6 +208,8 @@ void QDeclarativeGeoMapQuickItem::setMap(QDeclarativeGeoMap *quickMap, QGeoMap *
 {
     QDeclarativeGeoMapItemBase::setMap(quickMap,map);
     if (map && quickMap) {
+        staticProjectionCoordinate_ = map->coordinateToStaticProjection(coordinate_);
+
         connect(quickMap, SIGNAL(heightChanged()), this, SLOT(updateMapItemAssumeDirty()));
         connect(quickMap, SIGNAL(widthChanged()), this, SLOT(updateMapItemAssumeDirty()));
         connect(map, SIGNAL(cameraDataChanged(QGeoCameraData)),
@@ -372,7 +377,7 @@ void QDeclarativeGeoMapQuickItem::updatePolish()
     sourceItem_.data()->setPosition(QPointF(0,0));
     setWidth(sourceItem_.data()->width());
     setHeight(sourceItem_.data()->height());
-    setPositionOnMap(coordinate(), scaleFactor() * anchorPoint_);
+    setPositionOnMap(staticProjectionCoordinate_, scaleFactor() * anchorPoint_);
     update();
 }
 
