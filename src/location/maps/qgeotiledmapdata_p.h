@@ -88,8 +88,12 @@ public:
 
     void newTileFetched(const QGeoTileSpec &spec);
 
+    QDoubleVector2D coordinateToStaticProjection(const QGeoCoordinate &coordinate) const;
+    QDoubleVector2D staticProjectionToScreenPosition(const QDoubleVector2D &position) const;
+
     QGeoCoordinate screenPositionToCoordinate(const QDoubleVector2D &pos, bool clipToViewport = true) const;
     QDoubleVector2D coordinateToScreenPosition(const QGeoCoordinate &coordinate, bool clipToViewport = true) const;
+
     void prefetchTiles();
 
     // Alternative to exposing this is to make tileFetched a slot, but then requestManager would

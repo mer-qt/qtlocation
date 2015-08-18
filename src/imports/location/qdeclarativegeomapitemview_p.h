@@ -1,5 +1,7 @@
 /****************************************************************************
 **
+** Copyright (C) 2015 Jolla Ltd.
+** Contact: Aaron McCarthy <aaron.mccarthy@jollamobile.com>
 ** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
 ** Contact: http://www.qt-project.org/legal
 **
@@ -44,6 +46,7 @@
 
 #include <QtCore/QModelIndex>
 #include <QtQml/QQmlParserStatus>
+#include <QtQml/QQmlIncubator>
 #include <QtQml/qqml.h>
 
 QT_BEGIN_NAMESPACE
@@ -53,6 +56,9 @@ class QQmlComponent;
 class QQuickItem;
 class QDeclarativeGeoMap;
 class QDeclarativeGeoMapItemBase;
+class QQmlOpenMetaObject;
+class QQmlOpenMetaObjectType;
+class MapItemViewDelegateIncubator;
 
 class QDeclarativeGeoMapItemView : public QObject, public QQmlParserStatus
 {
@@ -80,6 +86,7 @@ public:
     void setMapData(QDeclarativeGeoMap *);
     void repopulate();
     void removeInstantiatedItems();
+    void instantiateAllItems();
 
     qreal zValue();
     void setZValue(qreal zValue);
@@ -93,26 +100,54 @@ Q_SIGNALS:
     void delegateChanged();
     void autoFitViewportChanged();
 
-private:
-    QDeclarativeGeoMapItemBase *createItemFromItemModel(int modelRow);
-
-    void fitViewport();
+protected:
+    void incubatorStatusChanged(MapItemViewDelegateIncubator *incubator,
+                                QQmlIncubator::Status status);
 
 private Q_SLOTS:
     void itemModelReset();
     void itemModelRowsInserted(const QModelIndex &index, int start, int end);
     void itemModelRowsRemoved(const QModelIndex &index, int start, int end);
+    void itemModelRowsMoved(const QModelIndex &parent, int start, int end,
+                            const QModelIndex &destination, int row);
+    void itemModelDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight,
+                              const QVector<int> &roles);
 
 private:
+    struct ItemData {
+        ItemData()
+        :   incubator(0), item(0), context(0), modelData(0), modelDataMeta(0)
+        {
+        }
+
+        ~ItemData();
+
+        MapItemViewDelegateIncubator *incubator;
+        QDeclarativeGeoMapItemBase *item;
+        QQmlContext *context;
+        QObject *modelData;
+        QQmlOpenMetaObject *modelDataMeta;
+    };
+
+    void createItemForIndex(const QModelIndex &index);
+    void fitViewport();
+
     bool componentCompleted_;
     QQmlComponent *delegate_;
     QAbstractItemModel *itemModel_;
     QDeclarativeGeoMap *map_;
-    QList<QDeclarativeGeoMapItemBase *> mapItemList_;
+    QVector<ItemData *> m_itemData;
     bool fitViewport_;
+
+    QQmlOpenMetaObjectType *m_metaObjectType;
+
+    friend class QTypeInfo<ItemData>;
+    friend class MapItemViewDelegateIncubator;
 };
 
 QT_END_NAMESPACE
+
+Q_DECLARE_TYPEINFO(QDeclarativeGeoMapItemView::ItemData, Q_MOVABLE_TYPE);
 
 QML_DECLARE_TYPE(QDeclarativeGeoMapItemView)
 

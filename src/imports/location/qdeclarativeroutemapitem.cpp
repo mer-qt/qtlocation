@@ -138,10 +138,22 @@ void QDeclarativeRouteMapItem::setRoute(QDeclarativeGeoRoute *route)
 
     route_ = route;
 
+    m_path.clear();
+    m_staticProjectionPath.clear();
+
     if (route_) {
-        path_ = route_->routePath();
-    } else {
-        path_ = QList<QGeoCoordinate>();
+        m_path.reserve(m_path.length());
+        m_staticProjectionPath.reserve(m_path.length());
+
+        foreach (const QGeoCoordinate &coordinate, route_->routePath()) {
+            // Check coordinate validitity here instead of in
+            // QGeoMapPolylineGeometry::updateSourcePoints() called from updatePolish()
+            if (!coordinate.isValid())
+                continue;
+
+            m_path.append(coordinate);
+            m_staticProjectionPath.append(map()->coordinateToStaticProjection(coordinate));
+        }
     }
 
     geometry_.markSourceDirty();
@@ -200,35 +212,21 @@ QDeclarativeMapLineProperties *QDeclarativeRouteMapItem::line()
 */
 void QDeclarativeRouteMapItem::updatePolish()
 {
-    if (!map() || path_.isEmpty())
+    if (!map() || m_path.isEmpty() || m_staticProjectionPath.isEmpty())
         return;
 
-    QGeoRectangle r = map()->visibleRegion();
-
-    bool cull = true;
-    foreach (const QGeoCoordinate &c, path_) {
-        if (r.contains(c)) {
-            cull = false;
-            break;
-        }
-    }
-
-    if (cull) {
-        if (visibleOnMap()) {
-            setVisibleOnMap(false);
-            update();
-        }
+    setVisibleOnMap(map()->visibleRegion().intersects(route_->bounds()));
+    if (!visibleOnMap())
         return;
-    } else {
-        setVisibleOnMap(true);
-    }
 
-    geometry_.updateSourcePoints(*map(), path_);
+    geometry_.updateSourcePoints(*map(), m_path, m_staticProjectionPath);
     geometry_.updateScreenPoints(*map(), line_.width());
+
     setWidth(geometry_.sourceBoundingBox().width());
     setHeight(geometry_.sourceBoundingBox().height());
 
-    setPositionOnMap(path_.at(0), -1 * geometry_.sourceBoundingBox().topLeft());
+    setPositionOnMap(m_path.at(0), -1 * geometry_.sourceBoundingBox().topLeft());
+
     update();
 }
 

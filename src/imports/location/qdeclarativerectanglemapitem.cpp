@@ -47,6 +47,7 @@
 #include <qnumeric.h>
 #include <QRectF>
 #include <QPointF>
+#include <QtPositioning/QGeoRectangle>
 
 QT_BEGIN_NAMESPACE
 
@@ -340,6 +341,11 @@ QSGNode *QDeclarativeRectangleMapItem::updateMapItemPaintNode(QSGNode *oldNode, 
 void QDeclarativeRectangleMapItem::updatePolish()
 {
     if (!map() || !topLeft().isValid() || !bottomRight().isValid())
+        return;
+
+    QGeoRectangle bb = QGeoRectangle(topLeft_, bottomRight_);
+    setVisibleOnMap(bb.intersects(map()->visibleRegion()));
+    if (!visibleOnMap())
         return;
 
     geometry_.updatePoints(*map(), topLeft_, bottomRight_);

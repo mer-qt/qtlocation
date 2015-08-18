@@ -97,6 +97,8 @@ public:
     void changeMapVersion(int mapVersion);
     void resized(int width, int height);
 
+    QDoubleVector2D staticProjectionToScreenPosition(const QDoubleVector2D &position) const;
+
     QGeoCoordinate screenPositionToCoordinate(const QDoubleVector2D &pos) const;
     QDoubleVector2D coordinateToScreenPosition(const QGeoCoordinate &coordinate) const;
 

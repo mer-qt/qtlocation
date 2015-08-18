@@ -94,6 +94,7 @@ protected Q_SLOTS:
 private:
     qreal scaleFactor();
     QGeoCoordinate coordinate_;
+    QDoubleVector2D staticProjectionCoordinate_;
     QPointer<QQuickItem> sourceItem_;
     QQuickItem *opacityContainer_;
     QPointF anchorPoint_;

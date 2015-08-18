@@ -75,6 +75,7 @@ public:
 
     virtual void setMap(QDeclarativeGeoMap *quickMap, QGeoMap *map);
     virtual void setPositionOnMap(const QGeoCoordinate &coordinate, const QPointF &offset);
+    virtual void setPositionOnMap(const QDoubleVector2D &position, const QPointF &offset);
     virtual void dragStarted();
     virtual void dragEnded();
 

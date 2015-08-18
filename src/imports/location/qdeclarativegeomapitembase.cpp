@@ -197,6 +197,16 @@ void QDeclarativeGeoMapItemBase::setPositionOnMap(const QGeoCoordinate &coordina
     setPosition(topLeft);
 }
 
+void QDeclarativeGeoMapItemBase::setPositionOnMap(const QDoubleVector2D &position, const QPointF &offset)
+{
+    if (!map_ || !quickMap_)
+        return;
+
+    QPointF topLeft = map_->staticProjectionToScreenPosition(position).toPointF() - offset;
+
+    setPosition(topLeft);
+}
+
 /*!
     \internal
 */
@@ -212,7 +222,11 @@ float QDeclarativeGeoMapItemBase::zoomLevelOpacity() const
 
 void QDeclarativeGeoMapItemBase::setVisibleOnMap(bool visible)
 {
+    if (visibleOnMap_ == visible)
+        return;
+
     visibleOnMap_ = visible;
+    update();
 }
 
 bool QDeclarativeGeoMapItemBase::visibleOnMap() const

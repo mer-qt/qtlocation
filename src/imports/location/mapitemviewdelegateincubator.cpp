@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Copyright (C) 2015 Jolla Ltd, author: Aaron McCarthy <aaron.mccarthy@jollamobile.com>
 ** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtLocation module of the Qt Toolkit.
@@ -39,62 +39,19 @@
 **
 ****************************************************************************/
 
-#ifndef QDECLARATIVEROUTEMAPITEM_H_
-#define QDECLARATIVEROUTEMAPITEM_H_
-
-#include "qdeclarativegeomapitembase_p.h"
-#include "qdeclarativegeomap_p.h"
-#include "qdeclarativepolylinemapitem_p.h"
-#include <QPen>
-#include <QBrush>
+#include "mapitemviewdelegateincubator.h"
+#include "qdeclarativegeomapitemview_p.h"
 
 QT_BEGIN_NAMESPACE
 
-class QDeclarativeGeoRoute;
-
-class QDeclarativeRouteMapItem : public QDeclarativeGeoMapItemBase
+MapItemViewDelegateIncubator::MapItemViewDelegateIncubator(QDeclarativeGeoMapItemView *view)
+:   m_view(view)
 {
-    Q_OBJECT
+}
 
-    Q_PROPERTY(QDeclarativeGeoRoute *route READ route WRITE setRoute NOTIFY routeChanged)
-    Q_PROPERTY(QDeclarativeMapLineProperties *line READ line CONSTANT)
-
-public:
-    explicit QDeclarativeRouteMapItem(QQuickItem *parent = 0);
-    ~QDeclarativeRouteMapItem();
-
-    virtual void setMap(QDeclarativeGeoMap *quickMap, QGeoMap *map);
-    //from QuickItem
-    virtual QSGNode *updateMapItemPaintNode(QSGNode *, UpdatePaintNodeData *);
-
-    void updatePolish();
-
-    QDeclarativeGeoRoute *route() const;
-    void setRoute(QDeclarativeGeoRoute *route);
-
-    QDeclarativeMapLineProperties *line();
-
-    bool contains(const QPointF &point) const;
-
-Q_SIGNALS:
-    void routeChanged(const QDeclarativeGeoRoute *route);
-
-protected Q_SLOTS:
-    void updateAfterLinePropertiesChanged();
-    void afterViewportChanged(const QGeoMapViewportChangeEvent &event);
-
-private:
-    QDeclarativeMapLineProperties line_;
-    QDeclarativeGeoRoute *route_;
-    QList<QGeoCoordinate> m_path;
-    QVector<QDoubleVector2D> m_staticProjectionPath;
-    bool dirtyMaterial_;
-    bool dragActive_;
-    QGeoMapPolylineGeometry geometry_;
-};
+void MapItemViewDelegateIncubator::statusChanged(QQmlIncubator::Status status)
+{
+    m_view->incubatorStatusChanged(this, status);
+}
 
 QT_END_NAMESPACE
-
-QML_DECLARE_TYPE(QDeclarativeRouteMapItem)
-
-#endif /* QDECLARATIVEROUTEMAPITEM_H_ */

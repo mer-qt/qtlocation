@@ -148,6 +148,24 @@ QDoubleVector2D QGeoMap::coordinateToScreenPosition(const QGeoCoordinate &coordi
     return mapData_->coordinateToScreenPosition(coordinate, clipToViewport);
 }
 
+/*
+    Returns the static projection of coordinate. The transformation from coordinate must not depend
+    on the current map viewport (center, zoom, etc).
+*/
+QDoubleVector2D QGeoMap::coordinateToStaticProjection(const QGeoCoordinate &coordinate) const
+{
+    return mapData_->coordinateToStaticProjection(coordinate);
+}
+
+/*
+    Returns the screen position of position. This function together with
+    coordinateToStaticProject() is equivalent to coordinateToScreenPosition().
+*/
+QDoubleVector2D QGeoMap::staticProjectionToScreenPosition(const QDoubleVector2D &position) const
+{
+    return mapData_->staticProjectionToScreenPosition(position);
+}
+
 void QGeoMap::update()
 {
     emit mapData_->update();
