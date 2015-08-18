@@ -1,5 +1,7 @@
 /****************************************************************************
 **
+** Copyright (C) 2015 Jolla Ltd.
+** Contact: Aaron McCarthy <aaron.mccarthy@jollamobile.com>
 ** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
 ** Contact: http://www.qt-project.org/legal
 **
@@ -43,9 +45,11 @@
 #include "qdeclarativegeomapmousearea_p.h"
 #include "qdeclarativegeomap_p.h"
 #include "qdeclarativegeomapitembase_p.h"
+#include "mapitemviewdelegateincubator.h"
 
 #include <QtCore/QAbstractItemModel>
 #include <QtQml/QQmlContext>
+#include <QtQml/QQmlIncubator>
 #include <QtQml/private/qqmlopenmetaobject_p.h>
 
 QT_BEGIN_NAMESPACE
@@ -94,6 +98,45 @@ QDeclarativeGeoMapItemView::~QDeclarativeGeoMapItemView()
 void QDeclarativeGeoMapItemView::componentComplete()
 {
     componentCompleted_ = true;
+}
+
+void QDeclarativeGeoMapItemView::incubatorStatusChanged(MapItemViewDelegateIncubator *incubator, QQmlIncubator::Status status)
+{
+    for (int i = 0; i < m_itemData.length(); ++i) {
+        ItemData *itemData = m_itemData.at(i);
+        if (itemData->incubator != incubator)
+            continue;
+
+        switch (status) {
+        case QQmlIncubator::Loading:
+            break;
+        case QQmlIncubator::Ready:
+            itemData->item = qobject_cast<QDeclarativeGeoMapItemBase *>(incubator->object());
+            if (!itemData->item) {
+                qWarning() << "QDeclarativeGeoMapItemView map item delegate is of unsupported type.";
+                delete incubator->object();
+            } else {
+                map_->addMapItem(itemData->item);
+                if (fitViewport_)
+                    fitViewport();
+            }
+            delete itemData->incubator;
+            itemData->incubator = 0;
+            break;
+        case QQmlIncubator::Null:
+            // Should never get here
+            delete itemData->incubator;
+            itemData->incubator = 0;
+            break;
+        case QQmlIncubator::Error:
+            qWarning() << "QDeclarativeGeoMapItemView map item creation failed.";
+            delete itemData->incubator;
+            itemData->incubator = 0;
+            break;
+        }
+
+        break;
+    }
 }
 
 /*!
@@ -173,12 +216,7 @@ void QDeclarativeGeoMapItemView::itemModelRowsInserted(const QModelIndex &index,
 
     for (int i = start; i <= end; ++i) {
         const QModelIndex insertedIndex = itemModel_->index(i, 0, index);
-        ItemData *itemData = createItemForIndex(insertedIndex);
-        if (!itemData)
-            break;
-
-        m_itemData.insert(i, itemData);
-        map_->addMapItem(itemData->item);
+        createItemForIndex(insertedIndex);
     }
 
     if (fitViewport_)
@@ -328,12 +366,7 @@ void QDeclarativeGeoMapItemView::instantiateAllItems()
 
     for (int i = 0; i < itemModel_->rowCount(); ++i) {
         const QModelIndex index = itemModel_->index(i, 0);
-        ItemData *itemData = createItemForIndex(index);
-        if (!itemData)
-            break;
-
-        m_itemData.append(itemData);
-        map_->addMapItem(itemData->item);
+        createItemForIndex(index);
     }
 
     if (fitViewport_)
@@ -353,7 +386,7 @@ void QDeclarativeGeoMapItemView::repopulate()
 /*!
     \internal
 */
-QDeclarativeGeoMapItemView::ItemData *QDeclarativeGeoMapItemView::createItemForIndex(const QModelIndex &index)
+void QDeclarativeGeoMapItemView::createItemForIndex(const QModelIndex &index)
 {
     // Expected to be already tested by caller.
     Q_ASSERT(delegate_);
@@ -382,27 +415,15 @@ QDeclarativeGeoMapItemView::ItemData *QDeclarativeGeoMapItemView::createItemForI
     itemData->context->setContextProperty(QLatin1String("model"), itemData->modelData);
     itemData->context->setContextProperty(QLatin1String("index"), index.row());
 
-    QObject *object = delegate_->create(itemData->context);
+    itemData->incubator = new MapItemViewDelegateIncubator(this);
+    delegate_->create(*itemData->incubator, itemData->context);
 
-    if (!object) {
-        qWarning() << "QDeclarativeGeoMapItemView map item creation failed.";
-        delete itemData;
-        return 0;
-    }
-
-    itemData->item = qobject_cast<QDeclarativeGeoMapItemBase *>(object);
-    if (!itemData->item) {
-        qWarning() << "QDeclarativeGeoMapItemView map item delegate is of unsupported type.";
-        delete object;
-        delete itemData;
-        return 0;
-    }
-
-    return itemData;
+    m_itemData.insert(index.row(), itemData);
 }
 
 QDeclarativeGeoMapItemView::ItemData::~ItemData()
 {
+    delete incubator;
     delete item;
     delete context;
     delete modelData;
