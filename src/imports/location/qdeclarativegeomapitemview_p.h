@@ -54,6 +54,7 @@ class QQuickItem;
 class QDeclarativeGeoMap;
 class QDeclarativeGeoMapItemBase;
 class QQmlOpenMetaObject;
+class QQmlOpenMetaObjectType;
 
 class QDeclarativeGeoMapItemView : public QObject, public QQmlParserStatus
 {
@@ -81,6 +82,7 @@ public:
     void setMapData(QDeclarativeGeoMap *);
     void repopulate();
     void removeInstantiatedItems();
+    void instantiateAllItems();
 
     qreal zValue();
     void setZValue(qreal zValue);
@@ -127,6 +129,8 @@ private:
     QDeclarativeGeoMap *map_;
     QVector<ItemData *> m_itemData;
     bool fitViewport_;
+
+    QQmlOpenMetaObjectType *m_metaObjectType;
 
     friend class QTypeInfo<ItemData>;
 };
